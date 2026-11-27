@@ -19,9 +19,8 @@ Panasonic DC-S5（MC801，V2.9）服务模式 RAM 工具：通过 USB 写 RAM，
 在 Releases 里下载：
 
 - `S5UpdateBypass-macOS-arm64.zip` — macOS Apple Silicon
-- `S5UpdateBypass-Windows-build.zip` — Windows 构建包（运行里面的 `build_windows.bat` 生成 `.exe`）
-
-Windows 构建包不是现成 EXE，因为 PyInstaller 不能在 macOS 上交叉编译 Windows PE。
+- `S5UpdateBypass.exe` — Windows x86-64 单文件 EXE（已在 Windows runner 上构建并自检）
+- `S5UpdateBypass-Windows-build.zip` — Windows 构建包（需要自己构建时的备用）
 
 ## 使用
 

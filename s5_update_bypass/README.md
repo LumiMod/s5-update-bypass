@@ -181,5 +181,6 @@ s5_update_bypass\build_windows.bat
 `release/` 里已有：
 
 - `S5UpdateBypass.app` / `S5UpdateBypass-macOS-arm64.zip`
+- `S5UpdateBypass.exe`（Windows x86-64 单文件）
 - `S5UpdateBypass-Windows-build.zip`（Windows 构建包）
 - `README.md`（发布说明）
