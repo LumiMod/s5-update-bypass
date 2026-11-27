@@ -144,14 +144,26 @@ def cmd_self_test(_args) -> int:
     st = b.status()
     assert st.code_raw == CODE_STOCK and st.switch_raw == SWITCH_OFF, st
 
-    # unknown layout must be refused
-    bad = UpdateBypass(FakeDevice(code=0x1234))
+    # unknown layout must be refused in all write/restore modes
+    bad = UpdateBypass(FakeDevice(code=0x1234, switch=SWITCH_OFF))
+    for op_name, op in (
+        ("apply ecdsa", lambda: bad.apply("ecdsa")),
+        ("apply full", lambda: bad.apply("full")),
+    ):
+        try:
+            op()
+        except BypassError:
+            pass
+        else:
+            raise AssertionError(f"unknown code layout was not refused by {op_name}")
+
+    bad_on = UpdateBypass(FakeDevice(code=0x1234, switch=SWITCH_ON))
     try:
-        bad.apply("ecdsa")
+        bad_on.restore("switch")
     except BypassError:
         pass
     else:
-        raise AssertionError("unknown code layout was not refused")
+        raise AssertionError("unknown code layout was not refused by restore switch")
 
     print("self-test OK")
     return 0

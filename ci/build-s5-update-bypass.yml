@@ -19,6 +19,7 @@ jobs:
       - name: Build .app
         working-directory: s5_update_bypass
         run: |
+          python bypass_cli.py self-test
           pyinstaller --noconfirm --clean S5UpdateBypass.spec
           ./dist/S5UpdateBypass.app/Contents/MacOS/S5UpdateBypass --self-test
       - name: Zip .app
@@ -43,6 +44,8 @@ jobs:
         working-directory: s5_update_bypass
         shell: cmd
         run: |
+          python bypass_cli.py self-test
+          python bypass_gui.py --self-test
           python -m PyInstaller --noconfirm --clean --onefile --windowed ^
             --name S5UpdateBypass ^
             --icon assets\icon.ico ^

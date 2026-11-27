@@ -143,10 +143,21 @@ class UpdateBypass:
             layout=layout,
         )
 
+    # --- version guard -------------------------------------------------
+    def _require_v29_layout(self) -> int:
+        code = self.read_u16(CODE_ADDR)
+        if code not in (CODE_STOCK, CODE_ECDSA_ONLY, CODE_ALL):
+            raise BypassError(
+                f"0x{CODE_ADDR:08X} 当前是 0x{code:04X}，不是已知的 V2.9 布局；"
+                "版本/地址不匹配，拒绝写入。"
+            )
+        return code
+
     # --- apply ---------------------------------------------------------
     def apply(self, mode: str, dry_run: bool = False) -> Status:
         mode = mode.lower()
         if mode in ("full", "switch"):
+            self._require_v29_layout()
             cur = self.read_u16(SWITCH_ADDR)
             if cur == SWITCH_ON:
                 return self.status()
@@ -175,20 +186,15 @@ class UpdateBypass:
     # --- restore -------------------------------------------------------
     def restore(self, mode: str = "all", dry_run: bool = False) -> Status:
         mode = mode.lower()
+        if mode not in ("all", "switch", "full", "ecdsa", "code"):
+            raise BypassError(f"unknown mode: {mode}")
+        cur_code = self._require_v29_layout()
         if mode in ("all", "switch", "full"):
             if self.read_u16(SWITCH_ADDR) == SWITCH_ON:
                 self.write_u16(SWITCH_ADDR, SWITCH_OFF, dry_run=dry_run)
         if mode in ("all", "ecdsa", "code"):
-            cur = self.read_u16(CODE_ADDR)
-            if cur in (CODE_ECDSA_ONLY, CODE_ALL):
+            if cur_code in (CODE_ECDSA_ONLY, CODE_ALL):
                 self.write_u16(CODE_ADDR, CODE_STOCK, dry_run=dry_run)
-            elif cur != CODE_STOCK:
-                raise BypassError(
-                    f"0x{CODE_ADDR:08X} 当前是 0x{cur:04X}，不是已知的 V2.9 值；"
-                    "拒绝恢复，避免写坏未知版本。"
-                )
-        if mode not in ("all", "switch", "full", "ecdsa", "code"):
-            raise BypassError(f"unknown mode: {mode}")
         return self.status()
 
     # --- dump ----------------------------------------------------------
@@ -219,8 +225,6 @@ class FakeDevice:
                 out.append(self.mem[a][0])
             elif a - 1 in self.mem and a % 2 == 1:
                 out.append(self.mem[a - 1][1])
-            elif a + 1 in self.mem and a % 2 == 0:
-                out.append(self.mem[a + 1][0])
             else:
                 out.append(0)
         return bytes(out)

@@ -17,6 +17,7 @@ import sys
 import time
 
 import usb.core
+import usb.util
 import usb.backend.libusb1
 
 VID = 0x04DA
@@ -152,6 +153,10 @@ class S5ServiceUSB:
             except usb.core.USBError:
                 pass
             self._claimed = False
+        try:
+            usb.util.dispose_resources(self.dev)
+        except Exception:
+            pass
 
     def _ctrl(self, wIndex):
         self.dev.ctrl_transfer(0x40, 0x00, 0, wIndex, 0, timeout=self.timeout_ms)
@@ -236,7 +241,7 @@ class S5ServiceUSB:
         self._ctrl(1)
         rx = self._read(16)
         chk = sum(rx[1:14]) & 0xFF
-        if len(rx) != 16 or rx[3] != 0x01 or rx[4] != 0x00 or rx[14] != chk:
+        if len(rx) != 16 or rx[3] != 0x01 or rx[4] != 0x00 or rx[14] != chk or rx[15] != 0x00:
             raise RuntimeError(f"0x9C 写入被拒绝：rx={rx.hex()}")
 
         if verify:

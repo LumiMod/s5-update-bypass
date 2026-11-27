@@ -15,8 +15,8 @@ except Exception:
 a = Analysis(
     ['bypass_gui.py'],
     pathex=['../s5_unlock'],
-    binaries=[],
-    datas=[(_libusb, 'lib')],
+    binaries=[(_libusb, 'lib')],
+    datas=[],
     hiddenimports=['s5_unlock_core', 'usb', 'usb.backend.libusb1'],
     hookspath=[],
     hooksconfig={},

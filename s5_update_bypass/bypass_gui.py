@@ -132,6 +132,11 @@ class App:
         self._set_buttons(False)
 
     def _btn(self, parent, text, cmd, color, font=("Helvetica", 11, "bold")):
+        if sys.platform == "darwin":
+            return tk.Button(parent, text=text, command=cmd,
+                             highlightbackground=color, fg="#111111",
+                             activeforeground="#111111",
+                             bd=0, font=font, cursor="hand2")
         return tk.Button(parent, text=text, command=cmd, bg=color, fg="white",
                          activebackground=color, activeforeground="white",
                          bd=0, font=font, cursor="hand2")
@@ -198,14 +203,33 @@ class App:
         self._run(self._do_connect)
 
     def _do_connect(self):
+        if S5ServiceUSB is None:
+            raise BypassError(
+                "无法导入 s5_unlock_core（pyusb/libusb 不可用）。"
+                "请确认已安装 pyusb 与 libusb。"
+            )
         self.log("正在查找相机（04DA:2370）…")
-        self.dev = S5ServiceUSB()
-        self.bypass = UpdateBypass(self.dev)
+        dev = S5ServiceUSB()
+        bypass = UpdateBypass(dev)
+        try:
+            self.dev = dev
+            self.bypass = bypass
+            self._do_read()
+        except Exception:
+            try:
+                dev.close()
+            except Exception:
+                pass
+            self.dev = None
+            self.bypass = None
+            self._post(self._set_status, "未连接", WARN)
+            raise
         self.log("✓ 已连接")
         self._post(self._set_status, "已连接", OK)
-        self._do_read()
 
     def on_disconnect(self):
+        if self.busy:
+            return
         if self.dev:
             try:
                 self.dev.close()
@@ -296,6 +320,13 @@ class App:
 
     def on_close(self):
         self._closed = True
+        if self.dev is not None:
+            try:
+                self.dev.close()
+            except Exception:
+                pass
+            self.dev = None
+            self.bypass = None
         try:
             self.root.destroy()
         except tk.TclError:
