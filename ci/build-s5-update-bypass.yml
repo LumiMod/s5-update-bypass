@@ -1,0 +1,60 @@
+name: build-s5-update-bypass
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "s5-update-bypass-*"
+
+jobs:
+  macos-app:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install build deps
+        run: python -m pip install --upgrade pip pyinstaller pyusb libusb-package
+      - name: Build .app
+        working-directory: s5_update_bypass
+        run: |
+          pyinstaller --noconfirm --clean S5UpdateBypass.spec
+          ./dist/S5UpdateBypass.app/Contents/MacOS/S5UpdateBypass --self-test
+      - name: Zip .app
+        run: |
+          cd s5_update_bypass/dist
+          ditto -c -k --keepParent S5UpdateBypass.app S5UpdateBypass-macOS.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: S5UpdateBypass-macOS
+          path: s5_update_bypass/dist/S5UpdateBypass-macOS.zip
+
+  windows-exe:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install build deps
+        run: python -m pip install --upgrade pip pyinstaller pyusb libusb-package
+      - name: Build .exe
+        working-directory: s5_update_bypass
+        shell: cmd
+        run: |
+          python -m PyInstaller --noconfirm --clean --onefile --windowed ^
+            --name S5UpdateBypass ^
+            --icon assets\icon.ico ^
+            --paths ..\s5_unlock ^
+            --hidden-import s5_unlock_core ^
+            --hidden-import usb ^
+            --hidden-import usb.backend.libusb1 ^
+            --hidden-import libusb_package ^
+            --collect-all libusb_package ^
+            bypass_gui.py
+          dist\S5UpdateBypass.exe --self-test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: S5UpdateBypass-Windows
+          path: s5_update_bypass/dist/S5UpdateBypass.exe
